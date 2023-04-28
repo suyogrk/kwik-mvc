@@ -1,2 +1,5 @@
 <?php
-print("500");
+
+declare(strict_types=1);
+
+echo '500';
