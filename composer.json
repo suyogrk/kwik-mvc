@@ -1,15 +1,32 @@
 {
-    "name": "suyogrk/kwikmvc",
-    "scripts": {
-        "serve" : "php -S 0.0.0.0:8000 -t public"
+  "name": "suyogrk/kwikmvc",
+  "scripts": {
+    "serve": "php -S 0.0.0.0:8001 -t public",
+    "test": "./vendor/bin/pest",
+    "profile": "./vendor/bin/pest --profile",
+    "insight": "./vendor/bin/phpinsights",
+    "insight-fix": "./vendor/bin/phpinsights --fix",
+    "analyse": "./vendor/bin/phpstan analyse -l 9 app framework"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app",
+      "Framework\\": "framework"
     },
-    "autoload" : {
-        "psr-4" : {
-            "App\\": "app",
-            "Framework\\": "framework"
-        }
-    },
-    "config":  {
-        "process-timeout": 0
+    "files": [
+      "framework/helpers.php"
+    ]
+  },
+  "config": {
+    "process-timeout": 0,
+    "allow-plugins": {
+      "pestphp/pest-plugin": true,
+      "dealerdirect/phpcodesniffer-composer-installer": true
     }
+  },
+  "require-dev": {
+    "pestphp/pest": "^2.5",
+    "nunomaduro/phpinsights": "^2.8",
+    "phpstan/phpstan": "^1.10"
+  }
 }
