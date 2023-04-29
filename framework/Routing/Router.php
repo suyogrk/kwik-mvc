@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Framework\Routing;
 
+use Exception;
 use Throwable;
 
 final class Router
 {
+    public const OPTIONAL_PARAMETER_REGEX = '#{[^}]+}#';
     /**
      * @var array<Route>
      */
@@ -16,8 +18,13 @@ final class Router
     /** @var array<int|string, callable> */
     private array $errorHandlers = [];
 
-    private Route $current;
+    private Route $currentRoute;
 
+    /**
+     * @param string   $method  Http method
+     * @param string   $path    The URL Path
+     * @param callable $handler Callable function to be executed when the route is matched
+     */
     public function add(
         string $method,
         string $path,
@@ -30,25 +37,30 @@ final class Router
         );
     }
 
+    /** Dispatch the route for the correct path
+     */
     public function dispatch(): mixed
     {
-        $paths = $this->paths();
+        $paths = $this->getPaths();
 
+        //Get the method and uri from the server
         $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         $requestPath = $_SERVER['REQUEST_URI'] ?? '/';
 
-        $matching = $this->match($requestMethod, $requestPath);
+        // Match the request method and path to the correct route
+        $matchingRoute = $this->match($requestMethod, $requestPath);
 
-        if ($matching) {
+        if ($matchingRoute) {
             try {
-                $this->current = $matching;
+                $this->currentRoute = $matchingRoute;
 
-                return $matching->dispatch();
+                return $matchingRoute->dispatch();
             } catch (Throwable $e) {
                 return $this->dispatchError();
             }
         }
 
+        //if the path exists but the method is not present send not allowed message
         if (in_array($requestPath, $paths)) {
             return $this->dispatchNotAllowed();
         }
@@ -93,15 +105,48 @@ final class Router
         exit;
     }
 
-    public function getCurrent(): ?Route
+    public function getCurrentRoute(): ?Route
     {
-        return $this->current;
+        return $this->currentRoute;
+    }
+
+    /**
+     * @param array<string, mixed>  $parameters
+     *
+     * @throws Exception
+     */
+    public function route(string $name, array $parameters = []): string
+    {
+        foreach ($this->routes as $route) {
+            if ($route->getName() === $name) {
+                $finds = [];
+                $replaces = [];
+
+                foreach ($parameters as $key => $value) {
+                    //for required parameters
+                    $finds[] = "{{$key}}";
+                    $replaces[] = $value;
+
+                    //for optional parameters
+                    $finds[] = "{{$key}?}";
+                    $replaces[] = $value;
+                }
+
+                $path = $route->getPath();
+                $path = str_replace($finds, $replaces, $path);
+
+                //remove optional parameters that are not provided
+                return preg_replace(self::OPTIONAL_PARAMETER_REGEX, '', $path) ?? '';
+            }
+        }
+
+        throw new Exception('no route with that name');
     }
 
     /**
      * @return array<string>
      */
-    private function paths(): array
+    private function getPaths(): array
     {
         $paths = [];
 
@@ -112,6 +157,11 @@ final class Router
         return $paths;
     }
 
+    /**
+     * Matches the HTTP method and Path to the route.
+     * return Route object if route is matched
+     * return null if no route is matched.
+     */
     private function match(string $method, string $path): ?Route
     {
         foreach ($this->routes as $route) {

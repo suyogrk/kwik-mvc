@@ -121,3 +121,9 @@ test('matches function returns the correct result', function(string $method, str
         'result' => true,
     ],
 ]);
+
+test('route naming works correctly', function(string $name) {
+    $this->route->name($name);
+
+    expect($this->route->getName())->toBe($name);
+})->with(['name']);
