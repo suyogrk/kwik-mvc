@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace Framework\Routing;
 
-final class Route
+class Route
 {
-    private const REGEX_SEARCH_PATTERN = '#{([^}]+)}/#';
-    private const OPTIONAL_PARAM_CHAR = '?';
-    private const REGEX_MATCH_OPTIONAL_PARAM = '([^/]*)(?:/?)'; //captures parameters with trailing slash optional
-    private const REGEX_MATCH_REQUIRED_PARAM = '([^/]+)/';
+    private const         REGEX_SEARCH_PATTERN = '#{([^}]+)}/#';
+    private const         OPTIONAL_PARAM_CHAR = '?';
+    private const         REGEX_MATCH_OPTIONAL_PARAM = '([^/]*)(?:/?)'; //captures parameters with trailing slash optional
+    private const         REGEX_MATCH_REQUIRED_PARAM = '([^/]+)/';
+    private const         NORMALISE_PATH_REGEX = '/[\/]{2,}/';
     private string $method;
     private string $path;
+    private ?string $name = null;
+
     /**
      * @var array<string>
      */
@@ -21,7 +24,7 @@ final class Route
     private mixed $handler;
 
     /**
-     * @var array<string>
+     * @var array<string, string|null>
      */
     private array $parameters = [];
 
@@ -46,13 +49,19 @@ final class Route
     }
 
     /**
-     * @return array<string>
+     * @return array<string, string|null>
      */
     public function getParameters(): array
     {
         return $this->parameters;
     }
 
+    /*Checks whether the provided method and path matches
+     * the methods and paths for route
+     *
+     * @param string $method HTTP method to check for match
+     * @param string $path   URL path to check for match
+     */
     public function matches(string $method, string $path): bool
     {
         //if both method and path is matching return true
@@ -105,10 +114,12 @@ final class Route
             static function (array $found) {
                 self::$parameterNames[] = rtrim($found[1], self::OPTIONAL_PARAM_CHAR);
 
+                //check for optional param
                 if (str_ends_with($found[1], self::OPTIONAL_PARAM_CHAR)) {
                     return self::REGEX_MATCH_OPTIONAL_PARAM;
                 }
 
+                //for required parameters
                 return self::REGEX_MATCH_REQUIRED_PARAM;
             },
             $pattern
@@ -121,9 +132,9 @@ final class Route
     }
 
     /**
-     * @param array $parameterValues
+     * @param array<string> $parameterValues
      *
-     * @return array
+     * @return array<string, string|null>
      */
     public function parseParameterValues(array $parameterValues): array
     {
@@ -132,6 +143,20 @@ final class Route
         $parameterValues += $emptyValues;
 
         return array_combine(self::$parameterNames, $parameterValues);
+    }
+
+    public function name(?string $name = null): self
+    {
+        if ($name) {
+            $this->name = $name;
+        }
+
+        return $this;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
     }
 
     /**
@@ -143,6 +168,6 @@ final class Route
         $path = trim($path, '/');
         $path = "/{$path}/";
 
-        return preg_replace('/[\/]{2,}/', '/', $path) ?? '';
+        return preg_replace(self::NORMALISE_PATH_REGEX, '/', $path) ?? '';
     }
 }

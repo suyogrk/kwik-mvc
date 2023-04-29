@@ -6,7 +6,7 @@
     "profile": "./vendor/bin/pest --profile",
     "insight": "./vendor/bin/phpinsights",
     "insight-fix": "./vendor/bin/phpinsights --fix",
-    "analyse": "./vendor/bin/phpstan analyse -l 9 app framework"
+    "phpstan": "./vendor/bin/phpstan analyse -c phpstan.neon"
   },
   "autoload": {
     "psr-4": {

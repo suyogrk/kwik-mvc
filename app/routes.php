@@ -9,7 +9,7 @@ return static function (Router $router): void {
         'GET',
         '/',
         static fn () => 'hello world',
-    );
+    )->name('home');
     $router->add(
         'GET',
         '/old-home',
@@ -27,7 +27,7 @@ return static function (Router $router): void {
     );
 
     $router->add('GET', '/products/view/{product}', static function () use ($router) {
-        $parameters = $router->getCurrent()?->getParameters();
+        $parameters = $router->getCurrentRoute()?->getParameters();
 
         $product = $parameters['product'] ?? '';
 
@@ -38,7 +38,7 @@ return static function (Router $router): void {
         'GET',
         '/services/view/{service?}/{a}',
         static function () use ($router) {
-            $parameters = $router->getCurrent()?->getParameters();
+            $parameters = $router->getCurrentRoute()?->getParameters();
 
             if (empty($parameters['service'])) {
                 return 'all services';
